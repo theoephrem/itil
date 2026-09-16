@@ -1,0 +1,29 @@
+Partie 1 — Diagnostic et CSI Register
+Constats par dimension
+Organisations & personnes : les techniciens ne semblent pas répartis par niveau de compétence (pas de logique N1/N2/N3 visible) ; chaque agent traite les tickets dans un ordre non priorisé, ce qui explique la lenteur de traitement perçue par les utilisateurs.
+Information & technologie : les tickets sont perdus, ce qui indique l'absence d'un point d'entrée unique et fiable — probablement plusieurs canaux de saisie (mail, téléphone, passage physique) sans centralisation systématique dans un outil de suivi.
+Partenaires & fournisseurs : aucune dépendance externe critique n'est mentionnée dans le contexte, mais l'absence de traçabilité rend impossible de savoir si un retard est imputable à un prestataire ou à l'équipe interne — un point à vérifier une fois la traçabilité rétablie.
+Value Streams & processus : les utilisateurs rappellent plusieurs fois pour le même problème, ce qui signale l'absence de communication de suivi (accusé de réception, statut d'
+
+
+
+
+Partie 2 — Pilotage du service (SLM + Event Management)
+SLA / SLO proposés
+SLA priorité critique : première réponse sous 1h, résolution sous 4h — SLO : 95% des tickets critiques traités dans ce délai sur un mois glissant.
+SLA priorité standard : première réponse sous 4h, résolution sous 24h — SLO : 90% des tickets standards traités dans ce délai sur un mois glissant.
+Classification des logs
+Log	Classification	Justification	Action
+`AUTH user=jdupont action=login status=success`	Informational	Connexion normale, aucune anomalie	Aucune
+`DISK host=SRV-FILE01 usage=82% threshold=80%`	Warning	Seuil dépassé mais pas de rupture de service immédiate	Planifier une purge ou une extension d'espace disque avant saturation
+`SVC name=helpdesk-portal status=unreachable duration=00:04:12`	Exception	Portail helpdesk inaccessible : impact direct sur la capacité des utilisateurs à ouvrir un ticket — ce type d'incident peut expliquer une partie des tickets perdus signalés dans le contexte	Ouverture immédiate d'un Incident, vérification de la disponibilité du service, communication aux utilisateurs impactés
+`BACKUP job=nightly-backup host=SRV-DB01 status=completed size=45GB`	Informational	Sauvegarde terminée avec succès, comportement attendu	Aucune
+`NET link=switch-3F-port12 status=down flapping=true count=6/10min`	Exception	Instabilité réseau répétée (flapping) : risque de coupures en cascade pour tous les services reliés à ce switch	Intervention immédiate de l'équipe réseau, diagnostic physique du port et remplacement si nécessaire
+
+
+Partie 3 — Traitement du changement
+RFC — Centralisation des demandes dans un point d'entrée unique (GLPI)
+Type : Normal (nécessite évaluation — le changement modifie les habitudes de travail de tous les utilisateurs et techniciens, sans être à haut risque immédiat).
+Impact : tous les utilisateurs internes (nouvelle procédure de demande) et tous les techniciens du helpdesk (arrêt de la prise en charge par les canaux informels type mail direct ou appel). Risque de régression : des demandes urgentes envoyées par un ancien canal habituel pourraient être ignorées pendant la période de transition si la consigne n'est pas relayée clairement.
+Plan de rollback : maintien des anciens canaux (mail, téléphone) en parallèle pendant 2 semaines après bascule, avec redirection manuelle systématique vers GLPI par un technicien dédié. En cas d'échec avéré de l'adoption (taux d'usage de GLPI inférieur à 50% après 2 semaines), retour temporaire à la procédure précédente le temps de renforcer la communication interne.
+Validation
